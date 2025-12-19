@@ -1,5 +1,4 @@
 const API_URL = 'https://todo-api-tester.up.railway.app/api/todos';
-
 // ======================
 // ELEMENTS
 // ======================
