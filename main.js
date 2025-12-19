@@ -1,14 +1,19 @@
 const API_URL = 'https://todo-api-tester.up.railway.app/api/todos';
 
-// ELEMENT
+// ======================
+// ELEMENTS
+// ======================
 const todoForm = document.getElementById('todo-form');
 const todoInput = document.getElementById('todo-input');
 const todoList = document.getElementById('todo-list');
+const taskCount = document.getElementById('task-count');
+const clearCompletedBtn = document.getElementById('clear-completed');
 
 // FILTER STATE
 let allTodos = [];
 let currentFilter = 'all'; // all | active | completed
 
+// EMPTY STATE TEMPLATE
 const emptyStateTemplate = `
     <div id="empty-state" class="text-center py-10 text-gray-500">
         <i class="fas fa-clipboard-list text-4xl mb-4 text-gray-300"></i>
@@ -17,9 +22,9 @@ const emptyStateTemplate = `
     </div>
 `;
 
-/* ======================
-   READ (GET)
-====================== */
+// ======================
+// READ (GET)
+// ======================
 async function getTodos() {
     try {
         const res = await fetch(API_URL);
@@ -30,9 +35,9 @@ async function getTodos() {
     }
 }
 
-/* ======================
-   CREATE (POST)
-====================== */
+// ======================
+// CREATE (POST)
+// ======================
 async function createTodo(title) {
     try {
         await fetch(API_URL, {
@@ -48,9 +53,9 @@ async function createTodo(title) {
     }
 }
 
-/* ======================
-   UPDATE (PUT)
-====================== */
+// ======================
+// UPDATE (PUT)
+// ======================
 async function updateTodo(id, isCompleted) {
     try {
         await fetch(`${API_URL}/${id}`, {
@@ -65,26 +70,42 @@ async function updateTodo(id, isCompleted) {
     }
 }
 
-/* ======================
-   DELETE (DELETE)
-====================== */
+// ======================
+// DELETE (DELETE)
+// ======================
 async function deleteTodo(id) {
     if (!confirm('Hapus tugas ini?')) return;
 
     try {
-        await fetch(`${API_URL}/${id}`, {
-            method: 'DELETE'
-        });
-
+        await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
         getTodos();
     } catch (err) {
         console.error('Gagal hapus todo:', err);
     }
 }
 
-/* ======================
-   FILTER LOGIC
-====================== */
+// ======================
+// CLEAR COMPLETED
+// ======================
+async function clearCompleted() {
+    const completedTodos = allTodos.filter(t => t.is_completed === 1);
+    if (!completedTodos.length) return alert('Tidak ada tugas yang selesai');
+
+    if (!confirm('Hapus semua tugas yang selesai?')) return;
+
+    try {
+        await Promise.all(
+            completedTodos.map(t => fetch(`${API_URL}/${t.id}`, { method: 'DELETE' }))
+        );
+        getTodos();
+    } catch (err) {
+        console.error('Gagal menghapus tugas selesai:', err);
+    }
+}
+
+// ======================
+// FILTER LOGIC
+// ======================
 function applyFilter() {
     let filteredTodos = [];
 
@@ -114,18 +135,20 @@ function setActiveFilter(filter) {
     applyFilter();
 }
 
-/* ======================
-   RENDER UI
-====================== */
+// ======================
+// RENDER UI
+// ======================
 function renderTodos(todos) {
     todoList.innerHTML = '';
 
     if (!todos.length) {
         todoList.innerHTML = emptyStateTemplate;
+        updateTaskCount();
         return;
     }
 
     todos.forEach(todo => renderTodo(todo));
+    updateTaskCount();
 }
 
 function renderTodo(todo) {
@@ -159,30 +182,31 @@ function renderTodo(todo) {
     todoList.appendChild(div);
 }
 
-/* ======================
-   EVENT LISTENER
-====================== */
+// ======================
+// TASK COUNT
+// ======================
+function updateTaskCount() {
+    const remaining = allTodos.filter(t => t.is_completed === 0).length;
+    taskCount.textContent = `${remaining} tugas tersisa`;
+}
+
+// ======================
+// EVENT LISTENERS
+// ======================
 todoForm.addEventListener('submit', (e) => {
     e.preventDefault();
-
     const title = todoInput.value.trim();
     if (!title) return;
-
     createTodo(title);
 });
 
-// FILTER BUTTON EVENTS
-document.getElementById('filter-all').addEventListener('click', () => {
-    setActiveFilter('all');
-});
-document.getElementById('filter-active').addEventListener('click', () => {
-    setActiveFilter('active');
-});
-document.getElementById('filter-completed').addEventListener('click', () => {
-    setActiveFilter('completed');
-});
+document.getElementById('filter-all').addEventListener('click', () => setActiveFilter('all'));
+document.getElementById('filter-active').addEventListener('click', () => setActiveFilter('active'));
+document.getElementById('filter-completed').addEventListener('click', () => setActiveFilter('completed'));
 
-/* ======================
-   INITIAL LOAD
-====================== */
+clearCompletedBtn.addEventListener('click', clearCompleted);
+
+// ======================
+// INITIAL LOAD
+// ======================
 document.addEventListener('DOMContentLoaded', getTodos);
